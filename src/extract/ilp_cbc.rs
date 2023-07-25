@@ -13,7 +13,7 @@ struct ClassVars {
 pub struct CbcExtractor;
 
 impl Extractor for CbcExtractor {
-    fn extract(&self, egraph: &EGraph, roots: &[ClassId]) -> ExtractionResult {
+    fn extract(&self, egraph: &EGraph, roots: &[ClassId], _class_parents: &IndexMap<ClassId, HashSet<NodeId>>) -> ExtractionResult {
         let max_order = egraph.nodes.len() as f64 * 10.0;
 
         let mut model = Model::default();

@@ -2,7 +2,7 @@ use super::*;
 
 pub struct BottomUpExtractor;
 impl Extractor for BottomUpExtractor {
-    fn extract(&self, egraph: &EGraph, _roots: &[ClassId]) -> ExtractionResult {
+    fn extract(&self, egraph: &EGraph, _roots: &[ClassId], _class_parents: &IndexMap<ClassId, HashSet<NodeId>>) -> ExtractionResult {
         let mut result = ExtractionResult::default();
         let mut costs = IndexMap::<ClassId, Cost>::default();
         let mut did_something = false;

@@ -26,6 +26,7 @@ fn main() {
         ),
         #[cfg(feature = "ilp-cbc")]
         ("ilp-cbc", extract::ilp_cbc::CbcExtractor.boxed()),
+        ("dijkstra", extract::dijkstra::DijkstraExtractor.boxed()),
     ]
     .into_iter()
     .collect();
@@ -61,13 +62,15 @@ fn main() {
         .with_context(|| format!("Failed to parse {filename}"))
         .unwrap();
 
+    let class_parents = extract::compute_class_parents(&egraph);
+
     let extractor = extractors
         .get(extractor_name.as_str())
         .with_context(|| format!("Unknown extractor: {extractor_name}"))
         .unwrap();
 
     let start_time = std::time::Instant::now();
-    let result = extractor.extract(&egraph, &egraph.root_eclasses);
+    let result = extractor.extract(&egraph, &egraph.root_eclasses, &class_parents);
 
     let us = start_time.elapsed().as_micros();
     assert!(result

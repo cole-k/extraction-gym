@@ -1,15 +1,35 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub use crate::*;
 
 pub mod bottom_up;
 pub mod greedy_dag;
+pub mod dijkstra;
 
 #[cfg(feature = "ilp-cbc")]
 pub mod ilp_cbc;
 
+pub fn compute_class_parents(egraph: &EGraph) -> IndexMap<ClassId, HashSet<NodeId>> {
+    let mut class_parents: IndexMap<ClassId, HashSet<NodeId>> = IndexMap::new();
+
+    for class in egraph.classes().values() {
+        for node_id in class.nodes.iter() {
+            let node = &egraph[node_id];
+            for child_id in node.children.iter() {
+                let child_class_id = egraph.nid_to_cid(child_id);
+                if !class_parents.contains_key(child_class_id) {
+                    class_parents.insert(child_class_id.clone(), HashSet::new());
+                }
+                class_parents[child_class_id].insert(node_id.clone());
+            }
+        }
+    }
+
+    class_parents
+}
+
 pub trait Extractor: Sync {
-    fn extract(&self, egraph: &EGraph, roots: &[ClassId]) -> ExtractionResult;
+    fn extract(&self, egraph: &EGraph, roots: &[ClassId], class_parents: &IndexMap<ClassId, HashSet<NodeId>>) -> ExtractionResult;
 
     fn boxed(self) -> Box<dyn Extractor>
     where
