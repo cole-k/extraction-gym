@@ -52,6 +52,34 @@ impl Extractor for DijkstraExtractor {
         //     .
         //     ;
 
+        let mut queue: PriorityQueue<ClassId, Reverse<CostNode>> = egraph
+            .classes()
+            .iter()
+            .map(|(class_id, class)| {
+                let mut nodes_iter = class.nodes.iter();
+                // The class will always have at least one node
+                let first_node_id = nodes_iter.next().unwrap();
+                let first_node = &egraph.nodes[first_node_id];
+                let least = if first_node.is_leaf() {
+                    CostNode::new(first_node.cost, first_node_id.clone())
+                } else {
+                    CostNode::new(INFINITY, first_node_id.clone())
+                };
+
+                let cost_node = nodes_iter.fold(least, |least, node_id| {
+                    let node = &egraph.nodes[node_id];
+                    if node.is_leaf() {
+                        if node.cost < least.cost {
+                            return CostNode::new(node.cost, node_id.clone());
+                        }
+                    }
+                    least
+                });
+                (class_id.clone(), Reverse(cost_node))
+            })
+            .collect();
+
+        /*
         let mut queue: PriorityQueue<ClassId, _> = egraph
             .classes()
             .iter()
@@ -78,12 +106,13 @@ impl Extractor for DijkstraExtractor {
                 }
             })
             .collect();
+        */
 
         while let Some((class_id, Reverse(cost_node))) = queue.pop() {
-            println!(
-                "Dequeued node with cost:{} and e-node id: {}",
-                cost_node.cost, cost_node.node
-            );
+            // println!(
+            //     "Dequeued node with cost:{} and e-node id: {}",
+            //     cost_node.cost, cost_node.node
+            // );
             // let class_id = egraph.nid_to_cid(&cost_node.node);
             // We already will have found the minimum cost
             // if costs.contains_key(class_id) {
@@ -106,19 +135,19 @@ impl Extractor for DijkstraExtractor {
                 //     // println!("Enqueued node with cost:{} and e-node id: {}", new_cost, cost_node.node);
                 //     queue.push(Reverse(CostNode::new(new_cost, node_id.clone())));
                 // }
-                println!(
-                    "Trying to enqueue node with cost:{} and e-node id: {}",
-                    new_cost, cost_node.node
-                );
+                // println!(
+                //     "Trying to enqueue node with cost:{} and e-node id: {}",
+                //     new_cost, cost_node.node
+                // );
                 if queue.get(curr_class_id).is_some() {
                     queue.change_priority_by(curr_class_id, |mut existing_cost_node| {
                         if new_cost < existing_cost_node.0.cost {
                             existing_cost_node.0.node = node_id.clone();
                             existing_cost_node.0.cost = new_cost;
-                            println!(
-                                "Enqueued node with cost:{} and e-node id: {}",
-                                new_cost, cost_node.node
-                            );
+                            // println!(
+                            //     "Enqueued node with cost:{} and e-node id: {}",
+                            //     new_cost, cost_node.node
+                            // );
                         }
                     });
                 } else {

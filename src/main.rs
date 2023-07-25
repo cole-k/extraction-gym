@@ -1,7 +1,5 @@
 mod extract;
 
-use clap::Parser;
-
 pub use extract::*;
 
 use egraph_serialize::*;
@@ -12,23 +10,10 @@ use ordered_float::NotNan;
 use anyhow::Context;
 
 use std::io::Write;
+use std::path::PathBuf;
 
 pub type Cost = NotNan<f64>;
 pub const INFINITY: Cost = unsafe { NotNan::new_unchecked(std::f64::INFINITY) };
-
-#[derive(Parser, Debug)]
-struct Args {
-    /// Extractor to use
-    #[arg(long = "extractor", default_value = "bottom-up")]
-    extractor_name: String,
-
-    /// Optional output filename
-    #[arg(long = "out", default_value = "out.json")]
-    out_filename: String,
-
-    /// Input filename
-    test_filename: String,
-}
 
 fn main() {
     env_logger::init();
@@ -46,26 +31,38 @@ fn main() {
     .into_iter()
     .collect();
 
-    let args = Args::parse();
+    let mut args = pico_args::Arguments::from_env();
 
-    if args.extractor_name == "print" {
+    let extractor_name: String = args
+        .opt_value_from_str("--extractor")
+        .unwrap()
+        .unwrap_or_else(|| "bottom-up".into());
+    if extractor_name == "print" {
         for name in extractors.keys() {
             println!("{}", name);
         }
         return;
     }
 
-    let out_filename: String = args.out_filename.clone();
+    let out_filename: PathBuf = args
+        .opt_value_from_str("--out")
+        .unwrap()
+        .unwrap_or_else(|| "out.json".into());
+
+    let filename: String = args.free_from_str().unwrap();
+
+    let rest = args.finish();
+    if !rest.is_empty() {
+        panic!("Unknown arguments: {:?}", rest);
+    }
 
     let mut out_file = std::fs::File::create(out_filename).unwrap();
 
-    let egraph = EGraph::from_json_file(&args.test_filename)
-        .with_context(|| format!("Failed to parse {}", &args.test_filename))
+    let egraph = EGraph::from_json_file(&filename)
+        .with_context(|| format!("Failed to parse {filename}"))
         .unwrap();
 
     let class_parents = extract::compute_class_parents(&egraph);
-
-    let extractor_name = args.extractor_name.clone();
 
     let extractor = extractors
         .get(extractor_name.as_str())
@@ -82,20 +79,16 @@ fn main() {
     let tree = result.tree_cost(&egraph, &egraph.root_eclasses);
     let dag = result.dag_cost(&egraph, &egraph.root_eclasses);
 
-    log::info!(
-        "{:40}\t{extractor_name:10}\t{tree:5}\t{dag:5}\t{us:5}",
-        &args.test_filename
-    );
+    log::info!("{filename:40}\t{extractor_name:10}\t{tree:5}\t{dag:5}\t{us:5}");
     writeln!(
         out_file,
         r#"{{ 
-    "name": "{}",
+    "name": "{filename}",
     "extractor": "{extractor_name}", 
     "tree": {tree}, 
     "dag": {dag}, 
     "micros": {us}
-}}"#,
-        &args.test_filename
+}}"#
     )
     .unwrap();
 }
