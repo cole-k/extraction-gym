@@ -1,4 +1,7 @@
-use std::{collections::BinaryHeap, cmp::{Ordering, Reverse}, ops::Neg};
+use std::{
+    cmp::{Ordering, Reverse},
+    collections::BinaryHeap,
+};
 
 use super::*;
 
@@ -35,7 +38,12 @@ impl PartialEq for CostNode {
 }
 
 impl Extractor for DijkstraExtractor {
-    fn extract(&self, egraph: &EGraph, _roots: &[ClassId], class_parents: &IndexMap<ClassId, HashSet<NodeId>>) -> ExtractionResult {
+    fn extract(
+        &self,
+        egraph: &EGraph,
+        _roots: &[ClassId],
+        class_parents: &IndexMap<ClassId, HashSet<NodeId>>,
+    ) -> ExtractionResult {
         let mut result = ExtractionResult::default();
         let mut costs = IndexMap::<ClassId, Cost>::default();
         let mut queue = BinaryHeap::new();
@@ -81,5 +89,4 @@ impl Extractor for DijkstraExtractor {
 
         result
     }
-
 }

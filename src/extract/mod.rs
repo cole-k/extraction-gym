@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 pub use crate::*;
 
 pub mod bottom_up;
-pub mod greedy_dag;
 pub mod dijkstra;
+pub mod greedy_dag;
 
 #[cfg(feature = "ilp-cbc")]
 pub mod ilp_cbc;
@@ -29,7 +29,12 @@ pub fn compute_class_parents(egraph: &EGraph) -> IndexMap<ClassId, HashSet<NodeI
 }
 
 pub trait Extractor: Sync {
-    fn extract(&self, egraph: &EGraph, roots: &[ClassId], class_parents: &IndexMap<ClassId, HashSet<NodeId>>) -> ExtractionResult;
+    fn extract(
+        &self,
+        egraph: &EGraph,
+        roots: &[ClassId],
+        class_parents: &IndexMap<ClassId, HashSet<NodeId>>,
+    ) -> ExtractionResult;
 
     fn boxed(self) -> Box<dyn Extractor>
     where

@@ -8,7 +8,12 @@ struct CostSet {
 
 pub struct GreedyDagExtractor;
 impl Extractor for GreedyDagExtractor {
-    fn extract(&self, egraph: &EGraph, _roots: &[ClassId], _class_parents: &IndexMap<ClassId, HashSet<NodeId>>) -> ExtractionResult {
+    fn extract(
+        &self,
+        egraph: &EGraph,
+        _roots: &[ClassId],
+        _class_parents: &IndexMap<ClassId, HashSet<NodeId>>,
+    ) -> ExtractionResult {
         let mut costs = IndexMap::<ClassId, CostSet>::default();
         let mut keep_going = true;
 
