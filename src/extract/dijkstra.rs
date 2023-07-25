@@ -46,17 +46,18 @@ impl Extractor for DijkstraExtractor {
     ) -> ExtractionResult {
         let mut result = ExtractionResult::default();
         let mut costs = IndexMap::<ClassId, Cost>::default();
-        let mut queue = BinaryHeap::new();
-
-        // Instantiate the queue with the leaves
-        for class in egraph.classes().values() {
-            for node_id in &class.nodes {
-                let node = &egraph[node_id];
+        // We initialize the queue with the leaves
+        let mut queue: BinaryHeap<_> = egraph
+            .nodes
+            .iter()
+            .flat_map(|(node_id, node)| {
                 if node.is_leaf() {
-                    queue.push(Reverse(CostNode::new(node.cost, node_id.clone())));
+                    Some(Reverse(CostNode::new(node.cost, node_id.clone())))
+                } else {
+                    None
                 }
-            }
-        }
+            })
+            .collect();
 
         while let Some(Reverse(cost_node)) = queue.pop() {
             // println!("Dequeued node with cost:{} and e-node id: {}", cost_node.cost, cost_node.node);
