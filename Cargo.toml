@@ -20,6 +20,7 @@ anyhow = "1.0.71"
 coin_cbc = {version = "0.1.6", optional = true}
 im-rc = "15.1.0"
 clap = { version = "4.3.19", features = ["derive"] }
+fxhash = "0.2.1"
 
 [dependencies.egraph-serialize]
 git = "https://github.com/egraphs-good/egraph-serialize"

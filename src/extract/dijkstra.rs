@@ -1,5 +1,6 @@
 use std::cmp::{Ordering, Reverse};
 
+use fxhash::FxHashMap;
 use priority_queue::PriorityQueue;
 
 use super::*;
@@ -30,12 +31,6 @@ impl PartialOrd for CostNode {
     }
 }
 
-// impl PartialEq for CostNode {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.cost == other.cost && self.node == other.node
-//     }
-// }
-
 impl Extractor for DijkstraExtractor {
     fn extract(
         &self,
@@ -45,12 +40,8 @@ impl Extractor for DijkstraExtractor {
     ) -> ExtractionResult {
         let mut result = ExtractionResult::default();
         let mut costs = IndexMap::<ClassId, Cost>::default();
-        // We initialize the queue with the leaves
-        // let mut queue: PriorityQueue<_, _> = egraph
-        //     .classes()
-        //     .iter()
-        //     .
-        //     ;
+
+        let mut unresolved_children: FxHashMap<NodeId, usize> = FxHashMap::default();
 
         let mut queue: PriorityQueue<ClassId, Reverse<CostNode>> = egraph
             .classes()
@@ -79,34 +70,9 @@ impl Extractor for DijkstraExtractor {
             })
             .collect();
 
-        /*
-        let mut queue: PriorityQueue<ClassId, _> = egraph
-            .classes()
-            .iter()
-            .flat_map(|(class_id, class)| {
-                let min_node = class
-                    .nodes
-                    .iter()
-                    .flat_map(|node_id| {
-                        let node = &egraph.nodes[node_id];
-                        if node.is_leaf() {
-                            Some((node, node_id))
-                        } else {
-                            None
-                        }
-                    })
-                    .min_by_key(|(node, _node_id)| node.cost);
-                if let Some((min_node, min_node_id)) = min_node {
-                    Some((
-                        class_id.clone(),
-                        Reverse(CostNode::new(min_node.cost, min_node_id.clone())),
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        */
+        for node_id in class_parents.values().flatten() {
+            *unresolved_children.entry(node_id.clone()).or_default() += 1;
+        }
 
         while let Some((class_id, Reverse(cost_node))) = queue.pop() {
             // println!(
@@ -128,7 +94,14 @@ impl Extractor for DijkstraExtractor {
                     continue;
                 }
 
-                let new_cost = result.node_sum_cost(egraph, &egraph[node_id], &costs);
+                let counter = unresolved_children.get_mut(&node_id).unwrap();
+                *counter -= 1;
+
+                let new_cost = if *counter == 0 {
+                    result.node_sum_cost(egraph, &egraph[node_id], &costs)
+                } else {
+                    INFINITY
+                };
                 // Small optimization to avoid polluting the queue with nodes
                 // for which we can't compute a cost yet
                 // if new_cost < INFINITY {
